@@ -3,7 +3,7 @@
 A leaderboard for the Adria/Balkan [GGG] Official WARDOGS server that runs
 entirely on GitHub, for free. No PC or server of your own has to stay on.
 
-- **GitHub Actions** runs `scripts/update.mjs` every 20 minutes. It reads the
+- **GitHub Actions** runs `scripts/update.mjs` every 5 minutes. It reads the
   player list from the server's RCON API and adds every finished match to each
   player's totals (20 kills in one match + 10 in the next = 30).
 - **GitHub Pages** shows `docs/index.html`, which reads the stats files the
@@ -55,7 +55,7 @@ After a minute or two the page is live at
 - A match is counted when the next one starts: map change, server restart,
   match clock reset, or the scoreboard resetting on the same map.
 - Players who leave keep the stats they had at the last update before they
-  left. Because updates are 20 minutes apart, kills made after the last update
+  left. Because updates are 5 minutes apart (often more, as GitHub starts runs late), kills made after the last update
   of a match (or by someone who joins and leaves between two updates) are not
   counted.
 - GitHub often starts scheduled runs a few minutes late. That is normal.
@@ -66,8 +66,8 @@ After a minute or two the page is live at
 - **Count the current match immediately**: same button, tick *Count the current
   match now*.
 - **Change the interval**: edit the `cron:` line in
-  `.github/workflows/update-stats.yml`. `"7,27,47 * * * *"` is every 20 min;
-  `"7,37 * * * *"` would be every 30 min. GitHub does not allow less than 5.
+  `.github/workflows/update-stats.yml`. `"2-59/5 * * * *"` is every 5 min (the
+  minimum GitHub allows); `"7,27,47 * * * *"` would be every 20 min.
 - **See errors**: Actions tab, open a run. A wrong password makes the run fail
   (red), so you notice it.
 - **Back up the stats**: everything is in `docs/data/` and in the git history.

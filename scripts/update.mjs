@@ -2,7 +2,7 @@
 /**
  * WARDOGS leaderboard updater for GitHub Actions.
  *
- * Runs once per call (GitHub runs it every ~20 minutes):
+ * Runs once per call (GitHub runs it every ~5 minutes):
  *   1. Reads /v1/status and /v1/players from the WARDOGS RCON server.
  *   2. Tracks the current match in docs/data/state.json.
  *   3. When a new match has started (map change, server restart, match clock
@@ -45,7 +45,7 @@ const PORT = process.env.WARDOGS_PORT || "9001";
 const PASSWORD = process.env.WARDOGS_PASSWORD || "";
 const TITLE = process.env.WARDOGS_TITLE || "Adria/Balkan [GGG] Official";
 
-const UPDATE_EVERY_SECONDS = 20 * 60;   // shown on the page; the schedule itself is in the workflow
+const UPDATE_EVERY_SECONDS = 5 * 60;   // shown on the page; the schedule itself is in the workflow
 const TIMEOUT_MS = 15000;
 const MATCH_RESET_SECONDS = 10;         // match clock going back this much = new match
 const STAT_RESET_MIN_PLAYERS = 3;       // this many players' stats dropping = new match
