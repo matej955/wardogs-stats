@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>WARDOGS Leaderboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #171c1a;
+  --panel: #20271f;
+  --panel-2: #283024;
+  --line: #34402f;
+  --text: #ebe5d2;
+  --muted: #9ca491;
+  --amber: #e9a825;
+  --olive: #8ea35e;
+  --red: #d8664f;
+  --display: "Saira Stencil One", "Impact", "Arial Narrow", sans-serif;
+  --cond: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body {
+  font: 15px/1.45 var(--body);
+  padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+  font-variant-numeric: tabular-nums;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+header { border-bottom: 1px solid var(--line); padding: 28px 0 22px; }
+.head { display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: end; justify-content: space-between; }
+h1 {
+  font: 400 clamp(44px, 8vw, 88px)/0.85 var(--display);
+  margin: 0; letter-spacing: 0.02em; color: var(--text);
+}
+.server { font: 600 19px/1.2 var(--cond); color: var(--amber); margin-top: 8px; letter-spacing: 0.02em; }
+.status { display: grid; grid-template-columns: auto auto; gap: 4px 18px; font: 500 16px/1.3 var(--cond); }
+.status dt { color: var(--muted); }
+.status dd { margin: 0; text-align: right; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--muted); vertical-align: 1px; }
+.dot.on { background: var(--olive); box-shadow: 0 0 0 3px rgba(142,163,94,.25); }
+.dot.off { background: var(--red); }
+.refresh-row { display: flex; align-items: center; gap: 12px; margin-top: 8px; grid-column: 1 / -1; justify-content: flex-end; }
+button {
+  font: 600 15px/1 var(--cond); letter-spacing: 0.03em; color: var(--bg); background: var(--amber);
+  border: 0; padding: 9px 14px; border-radius: 3px; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+button:disabled { opacity: .55; cursor: default; }
+
+.alert { margin: 16px 0 0; padding: 10px 14px; border-left: 3px solid var(--red); background: rgba(216,102,79,.1); }
+.alert[hidden] { display: none; }
+
+/* Tabs */
+nav { display: flex; gap: 4px; margin: 22px 0 0; border-bottom: 1px solid var(--line); }
+nav button {
+  background: none; color: var(--muted); border-radius: 0; padding: 12px 16px 11px;
+  font-size: 18px; border-bottom: 3px solid transparent; margin-bottom: -1px;
+}
+nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--amber); }
+section[hidden] { display: none; }
+section { padding: 22px 0 60px; }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; align-items: center; }
+input[type="search"], select {
+  font: 500 15px var(--body); color: var(--text); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 3px; padding: 9px 12px; min-width: 0;
+}
+input[type="search"] { flex: 1 1 260px; max-width: 420px; }
+.count { color: var(--muted); margin-left: auto; font: 500 15px var(--cond); }
+
+/* Table */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 3px; }
+table { width: 100%; border-collapse: collapse; min-width: 760px; }
+th, td { padding: 8px 10px; text-align: left; white-space: nowrap; }
+th {
+  font: 600 15px/1.2 var(--cond); color: var(--muted); background: var(--panel-2);
+  border-bottom: 1px solid var(--line); position: sticky; top: 0;
+}
+th.num, td.num { text-align: right; }
+th button {
+  all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center;
+}
+th button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+th[aria-sort="ascending"] button, th[aria-sort="descending"] button { color: var(--text); }
+th[aria-sort="ascending"] button::after { content: "▲"; font-size: 10px; color: var(--amber); }
+th[aria-sort="descending"] button::after { content: "▼"; font-size: 10px; color: var(--amber); }
+tbody tr { border-bottom: 1px solid rgba(52,64,47,.6); }
+tbody tr:nth-child(even) { background: rgba(32,39,31,.55); }
+tbody tr:hover { background: var(--panel-2); }
+td.rank { font: 700 17px var(--cond); color: var(--muted); width: 56px; }
+tr.top td.rank { font: 400 26px/1 var(--display); color: var(--amber); }
+tr.top td.player { font-weight: 600; }
+td.kills { font: 700 17px var(--cond); }
+.clan {
+  display: inline-block; font: 600 13px/1 var(--cond); letter-spacing: .04em;
+  padding: 3px 6px; border: 1px solid var(--line); border-radius: 2px; color: var(--olive);
+}
+.clan.home { color: var(--amber); border-color: rgba(233,168,37,.45); }
+.player a { text-decoration: none; }
+.player a:hover { text-decoration: underline; text-decoration-color: var(--amber); }
+.muted { color: var(--muted); }
+.kd-hi { color: var(--olive); }
+.kd-lo { color: var(--red); }
+
+.pager { display: flex; gap: 8px; justify-content: flex-end; align-items: center; margin-top: 12px; font: 500 15px var(--cond); }
+
+/* Live */
+.live-head { display: flex; flex-wrap: wrap; gap: 8px 28px; align-items: baseline; margin-bottom: 16px; }
+.live-map { font: 400 clamp(32px, 5vw, 52px)/1 var(--display); }
+.live-meta { color: var(--muted); font: 500 16px var(--cond); }
+.note { color: var(--muted); font-size: 14px; margin: 12px 0 0; max-width: 70ch; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); border: 1px dashed var(--line); border-radius: 3px; }
+
+/* Factions */
+:root { --f-lonestar: #d9a441; --f-valkyra: #6fa8c7; --f-manticore: #c46a5a; --f-other: #9ca491; }
+.factions { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px; }
+.faction { background: var(--panel); border: 1px solid var(--line); border-top: 4px solid var(--fc); border-radius: 3px; padding: 12px 16px; }
+.faction h3 { margin: 0 0 6px; font: 400 26px/1 var(--display); color: var(--fc); }
+.fstats { display: grid; grid-template-columns: repeat(4, auto); gap: 2px 14px; }
+.fstats span { color: var(--muted); font: 500 13px var(--cond); }
+.fstats b { font: 700 20px/1 var(--cond); }
+.ftag { display: inline-block; font: 600 13px/1 var(--cond); padding: 3px 7px; border-radius: 2px; color: var(--bg); background: var(--fc); }
+tr.left td { opacity: .6; }
+
+/* Matches */
+.match-row { cursor: pointer; }
+.match-row td:first-child { font: 700 17px var(--cond); color: var(--amber); width: 64px; }
+.match-detail > td { background: var(--bg); padding: 0 0 14px; }
+.match-detail table { min-width: 640px; border-top: 1px solid var(--line); }
+.src { font-size: 13px; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .wrap { padding: 0 14px; }
+  .opt { display: none; }
+  table, .match-detail table { min-width: 0; }
+  th, td { padding: 7px 5px; font-size: 14px; }
+  td.kills, td.rank { font-size: 16px; }
+  nav { overflow-x: auto; }
+  nav button { font-size: 16px; padding: 10px 9px 9px; white-space: nowrap; }
+  .player { white-space: normal; min-width: 120px; }
+  .status { width: 100%; }
+  .count { margin-left: 0; width: 100%; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  tr.flash td { animation: flash 1.4s ease-out; }
+  @keyframes flash { from { background: rgba(233,168,37,.18); } to { background: transparent; } }
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <h1>WARDOGS</h1>
+        <div class="server" id="server-title">Player leaderboard</div>
+      </div>
+      <dl class="status" aria-live="polite">
+        <dt>Server</dt><dd id="st-server"><span class="dot"></span>Loading…</dd>
+        <dt>Map</dt><dd id="st-map">–</dd>
+        <dt>Players online</dt><dd id="st-players">–</dd>
+        <dt>Matches tracked</dt><dd id="st-matches">–</dd>
+        <div class="refresh-row">
+          <span class="muted" id="st-next">–</span>
+          <button id="refresh" type="button">Refresh now</button>
+        </div>
+      </dl>
+    </div>
+    <p class="alert" id="alert" role="alert" hidden></p>
+    <nav role="tablist" aria-label="Views">
+      <button role="tab" id="tab-board" aria-controls="view-board" aria-selected="true">Leaderboard</button>
+      <button role="tab" id="tab-live" aria-controls="view-live" aria-selected="false">Current match</button>
+      <button role="tab" id="tab-matches" aria-controls="view-matches" aria-selected="false">Match history</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="view-board" role="tabpanel" aria-labelledby="tab-board">
+    <div class="controls">
+      <input type="search" id="q" placeholder="Search player, clan or Steam ID" aria-label="Search players">
+      <select id="clan" aria-label="Filter by clan"><option value="">All clans</option></select>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="table-scroll"><table id="board"></table></div>
+    <div class="pager">
+      <button class="ghost" id="prev" type="button">Previous</button>
+      <span id="page-info"></span>
+      <button class="ghost" id="next" type="button">Next</button>
+    </div>
+  </section>
+
+  <section id="view-live" role="tabpanel" aria-labelledby="tab-live" hidden>
+    <div id="live"></div>
+  </section>
+
+  <section id="view-matches" role="tabpanel" aria-labelledby="tab-matches" hidden>
+    <div id="matches-wrap"></div>
+  </section>
+</main>
+
+<script>
+const REFRESH_MS = 5 * 60 * 1000;   // how often the page re-reads stats.json
+const PAGE_SIZE = 50;
+const HOME_CLAN = "GGG";
+
+const $ = (id) => document.getElementById(id);
+const fmtInt = (n) => n == null ? "–" : Math.round(n).toLocaleString("en-US");
+const fmt1 = (n) => n == null ? "–" : n.toFixed(1);
+const fmt2 = (n) => n == null ? "–" : n.toFixed(2);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const COLS = [
+  { k: "rank", label: "#", num: true, cls: "rank" },
+  { k: "name", label: "Player", cls: "player" },
+  { k: "clan", label: "Clan", opt: true },
+  { k: "matchesScored", label: "Matches", num: true, opt: true },
+  { k: "kills", label: "Kills", num: true, cls: "kills" },
+  { k: "deaths", label: "Deaths", num: true },
+  { k: "kd", label: "K/D", num: true, fmt: fmt2 },
+  { k: "cash", label: "Cash", num: true, fmt: fmtInt },
+  { k: "killsPerMatch", label: "Kills/match", num: true, fmt: fmt1, opt: true },
+  { k: "cashPerMatch", label: "Cash/match", num: true, fmt: fmtInt, opt: true },
+];
+
+let data = null;
+let sortKey = "rank", sortDir = 1, page = 0;
+let nextAt = 0, loading = false;
+let lastKills = new Map();
+let matchesLoaded = false;
+
+function ago(iso) {
+  if (!iso) return "never";
+  const s = Math.max(0, Math.round((Date.now() - new Date(iso)) / 1000));
+  if (s < 60) return `${s}s ago`;
+  if (s < 3600) return `${Math.round(s / 60)} min ago`;
+  if (s < 86400) return `${Math.round(s / 3600)} h ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+function clanBadge(clan) {
+  if (!clan) return '<span class="muted">–</span>';
+  return `<span class="clan${clan.toUpperCase() === HOME_CLAN ? " home" : ""}">${esc(clan)}</span>`;
+}
+
+function playerCell(name, key) {
+  if (key && /^7656\d{13}$/.test(key)) {
+    return `<a href="https://steamcommunity.com/profiles/${esc(key)}" target="_blank" rel="noopener noreferrer" title="Steam profile">${esc(name)}</a>`;
+  }
+  return esc(name);
+}
+
+// ---------------------------------------------------------------- loading
+
+async function load() {
+  if (loading) return;
+  loading = true;
+  $("refresh").disabled = true;
+  try {
+    const r = await fetch(`data/stats.json?t=${Date.now()}`, { cache: "no-store" });
+    if (r.status === 404) throw new Error("no data yet, the first update has not run");
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const fresh = await r.json();
+    const prevKills = lastKills;
+    const prevMatchCount = data ? data.matchCount : null;
+    lastKills = new Map(fresh.players.map(p => [p.key, p.kills]));
+    data = fresh;
+    showAlert("");
+    renderStatus();
+    fillClans();
+    renderBoard(prevKills);
+    renderLive();
+    if (matchesLoaded && prevMatchCount !== fresh.matchCount) loadMatches();
+  } catch (e) {
+    showAlert(`Could not load the leaderboard (${e.message}). It will try again at the next update.`);
+  } finally {
+    loading = false;
+    $("refresh").disabled = false;
+    nextAt = Date.now() + REFRESH_MS;
+    tick();
+  }
+}
+
+function showAlert(msg) {
+  $("alert").textContent = msg;
+  $("alert").hidden = !msg;
+}
+
+function tick() {
+  const left = Math.max(0, nextAt - Date.now());
+  const m = Math.floor(left / 60000), s = Math.floor(left % 60000 / 1000);
+  $("st-next").textContent = `Next update in ${m}:${String(s).padStart(2, "0")}`;
+  if (left === 0 && !loading && document.visibilityState === "visible") load();
+}
+
+// ---------------------------------------------------------------- status
+
+function renderStatus() {
+  const st = data.status || {};
+  $("server-title").textContent = data.title || "Player leaderboard";
+  const online = st.online !== false && st.polledUtc;
+  $("st-server").innerHTML = online
+    ? `<span class="dot on"></span>Online, server read ${esc(ago(st.polledUtc))}`
+    : `<span class="dot off"></span>Not responding${st.failedUtc ? ` since ${esc(ago(st.failedUtc))}` : ""}`;
+  $("st-map").textContent = st.map || "–";
+  $("st-players").textContent = st.playersCurrent != null
+    ? `${st.playersCurrent}${st.playersMax ? " / " + st.playersMax : ""}` : "–";
+  $("st-matches").textContent = fmtInt(data.matchCount);
+}
+
+// ---------------------------------------------------------------- leaderboard
+
+function fillClans() {
+  const sel = $("clan"), current = sel.value;
+  const counts = new Map();
+  for (const p of data.players) if (p.clan) counts.set(p.clan, (counts.get(p.clan) || 0) + 1);
+  const clans = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  sel.innerHTML = '<option value="">All clans</option>' +
+    clans.map(([c, n]) => `<option value="${esc(c)}">${esc(c)} (${n})</option>`).join("");
+  sel.value = counts.has(current) ? current : "";
+}
+
+function filtered() {
+  const q = $("q").value.trim().toLowerCase();
+  const clan = $("clan").value;
+  let rows = data.players.filter(p =>
+    (!clan || p.clan === clan) &&
+    (!q || p.name.toLowerCase().includes(q) || p.clan.toLowerCase().includes(q) || p.key.includes(q)));
+  const col = COLS.find(c => c.k === sortKey);
+  rows.sort((a, b) => {
+    let x = a[sortKey], y = b[sortKey];
+    if (x == null) return 1;
+    if (y == null) return -1;
+    if (!col.num) { x = String(x).toLowerCase(); y = String(y).toLowerCase(); }
+    return (x < y ? -1 : x > y ? 1 : a.rank - b.rank) * sortDir;
+  });
+  return rows;
+}
+
+function renderBoard(prevKills) {
+  if (!data) return;
+  const rows = filtered();
+  const pages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  page = Math.min(page, pages - 1);
+  const slice = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+
+  const head = "<thead><tr>" + COLS.map(c => {
+    const sorted = sortKey === c.k ? (sortDir === 1 ? "ascending" : "descending") : "none";
+    return `<th class="${c.num ? "num " : ""}${c.opt ? "opt" : ""}" aria-sort="${sorted}" scope="col">` +
+      `<button type="button" data-sort="${c.k}">${c.label}</button></th>`;
+  }).join("") + "</tr></thead>";
+
+  const body = slice.length ? slice.map(p => {
+    const changed = prevKills && prevKills.size && prevKills.has(p.key) && prevKills.get(p.key) !== p.kills;
+    const cells = COLS.map(c => {
+      let v;
+      if (c.k === "name") v = playerCell(p.name, p.key);
+      else if (c.k === "clan") v = clanBadge(p.clan);
+      else if (c.k === "kd") {
+        const cls = p.deaths === 0 && p.kills === 0 ? "muted" : p.kd >= 2 ? "kd-hi" : p.kd < 1 ? "kd-lo" : "";
+        v = `<span class="${cls}">${fmt2(p.kd)}</span>`;
+      } else v = c.fmt ? c.fmt(p[c.k]) : esc(p[c.k] ?? "–");
+      return `<td class="${c.num ? "num " : ""}${c.cls || ""} ${c.opt ? "opt" : ""}">${v}</td>`;
+    }).join("");
+    return `<tr class="${p.rank <= 3 ? "top" : ""}${changed ? " flash" : ""}">${cells}</tr>`;
+  }).join("") : `<tr><td colspan="${COLS.length}" class="muted" style="text-align:center;padding:30px">${data.players.length ? "No players match this search. Clear the search or pick another clan." : "No finished matches yet. Totals appear here when the current match ends; see Current match for live stats."}</td></tr>`;
+
+  $("board").innerHTML = head + "<tbody>" + body + "</tbody>";
+  $("count").textContent = rows.length === data.players.length
+    ? `${fmtInt(rows.length)} players` : `${fmtInt(rows.length)} of ${fmtInt(data.players.length)} players`;
+  $("page-info").textContent = `Page ${page + 1} of ${pages}`;
+  $("prev").disabled = page === 0;
+  $("next").disabled = page >= pages - 1;
+}
+
+$("board").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-sort]");
+  if (!b) return;
+  const k = b.dataset.sort, col = COLS.find(c => c.k === k);
+  if (sortKey === k) sortDir = -sortDir;
+  else { sortKey = k; sortDir = (col.num && k !== "rank") ? -1 : 1; }
+  page = 0;
+  renderBoard();
+});
+$("q").addEventListener("input", () => { page = 0; renderBoard(); });
+$("clan").addEventListener("change", () => { page = 0; renderBoard(); });
+$("prev").addEventListener("click", () => { page--; renderBoard(); window.scrollTo({ top: $("view-board").offsetTop - 10 }); });
+$("next").addEventListener("click", () => { page++; renderBoard(); window.scrollTo({ top: $("view-board").offsetTop - 10 }); });
+
+// ---------------------------------------------------------------- live match
+
+function factionColor(name) {
+  const n = String(name || "").toLowerCase();
+  if (n.includes("lonestar")) return "var(--f-lonestar)";
+  if (n.includes("valkyr")) return "var(--f-valkyra)";
+  if (n.includes("manticore")) return "var(--f-manticore)";
+  return "var(--f-other)";
+}
+
+function factionTag(name) {
+  if (!name) return '<span class="muted">–</span>';
+  return `<span class="ftag" style="--fc:${factionColor(name)}">${esc(name)}</span>`;
+}
+
+function statTable(players, live) {
+  const rows = players.map((p, i) => {
+    const kd = p.deaths ? p.kills / p.deaths : p.kills;
+    const left = live && !p.online;
+    return `<tr class="${i < 3 ? "top" : ""}${left ? " left" : ""}">
+    <td class="num rank">${i + 1}</td>
+    <td class="player">${playerCell(p.name, p.key)}${left ? ' <span class="muted">(left)</span>' : ""}</td>
+    <td>${factionTag(p.faction)}</td>
+    <td class="num kills">${fmtInt(p.kills)}</td>
+    <td class="num">${fmtInt(p.deaths)}</td>
+    <td class="num">${fmt2(kd)}</td>
+    <td class="num">${fmtInt(p.cash)}</td>
+    ${live ? `<td class="num opt">${left ? "–" : fmtInt(p.pingMs) + " ms"}</td>` : ""}</tr>`;
+  }).join("");
+  return `<table><thead><tr><th class="num">#</th><th>Player</th><th>Faction</th>
+    <th class="num">Kills</th><th class="num">Deaths</th><th class="num">K/D</th><th class="num">Cash</th>
+    ${live ? '<th class="num opt">Ping</th>' : ""}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderLive() {
+  const live = data.live;
+  if (!live || !live.players.length) {
+    $("live").innerHTML = `<div class="empty">No match is being tracked right now. Stats appear here once players join the server.</div>`;
+    return;
+  }
+  $("live").innerHTML = `
+    <div class="live-head">
+      <div class="live-map">${esc(live.map || "Unknown map")}</div>
+      <div class="live-meta">Started ${esc(ago(live.startedUtc))}, ${live.players.length} players seen so far</div>
+    </div>
+    <div class="factions">${(live.factions || []).map(f => `
+      <div class="faction" style="--fc:${factionColor(f.name)}">
+        <h3>${esc(f.name)}</h3>
+        <div class="fstats"><span>Players</span><span>Kills</span><span>Deaths</span><span>Cash</span>
+          <b>${fmtInt(f.players)}</b><b>${fmtInt(f.kills)}</b><b>${fmtInt(f.deaths)}</b><b>${fmtInt(f.cash)}</b></div>
+      </div>`).join("")}</div>
+    <div class="table-scroll">${statTable(live.players, true)}</div>
+    <p class="note">When this match ends, every player's numbers here are added to their all-time totals on the Leaderboard. Players who leave keep the stats they had when they left.</p>`;
+}
+
+// ---------------------------------------------------------------- matches
+
+async function loadMatches() {
+  matchesLoaded = true;
+  try {
+    const r = await fetch(`data/matches.json?t=${Date.now()}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { matches } = await r.json();
+    if (!matches.length) {
+      $("matches-wrap").innerHTML = `<div class="empty">No finished matches yet. The first one appears here when the current match ends.</div>`;
+      return;
+    }
+    $("matches-wrap").innerHTML = `<div class="table-scroll"><table><thead><tr><th>Match</th><th>Map and date</th><th class="num">Players</th><th>Source</th></tr></thead><tbody>` +
+      matches.map(m => `<tr class="match-row" data-id="${m.id}" data-detail="${m.hasDetail}" tabindex="0" aria-expanded="false">
+        <td>${m.id}</td><td>${esc(m.label)}</td><td class="num">${fmtInt(m.playersRecorded)}</td>
+        <td class="src">${esc(m.source)}${m.hasDetail ? "" : " (totals only)"}</td></tr>`).join("") + "</tbody></table></div>";
+  } catch (e) {
+    showAlert(`Could not load match history (${e.message}).`);
+  }
+}
+
+async function toggleMatch(tr) {
+  const open = tr.nextElementSibling && tr.nextElementSibling.classList.contains("match-detail");
+  if (open) { tr.nextElementSibling.remove(); tr.setAttribute("aria-expanded", "false"); return; }
+  const detail = document.createElement("tr");
+  detail.className = "match-detail";
+  if (tr.dataset.detail !== "true") {
+    detail.innerHTML = `<td colspan="4"><p class="note" style="padding:0 10px">No per-player stats were stored for this match.</p></td>`;
+  } else {
+    detail.innerHTML = `<td colspan="4"><p class="note" style="padding:0 10px">Loading…</p></td>`;
+    try {
+      const r = await fetch(`data/matches/${tr.dataset.id}.json?t=${Date.now()}`, { cache: "no-store" });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const m = await r.json();
+      detail.innerHTML = `<td colspan="4">${statTable(m.players, false)}</td>`;
+    } catch (e) {
+      detail.innerHTML = `<td colspan="4"><p class="note" style="padding:0 10px">Could not load this match (${esc(e.message)}).</p></td>`;
+    }
+  }
+  tr.after(detail);
+  tr.setAttribute("aria-expanded", "true");
+}
+
+$("matches-wrap").addEventListener("click", (e) => { const tr = e.target.closest(".match-row"); if (tr) toggleMatch(tr); });
+$("matches-wrap").addEventListener("keydown", (e) => {
+  const tr = e.target.closest(".match-row");
+  if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleMatch(tr); }
+});
+
+// ---------------------------------------------------------------- tabs
+
+const TABS = { "tab-board": "view-board", "tab-live": "view-live", "tab-matches": "view-matches" };
+document.querySelectorAll('[role="tab"]').forEach(tab => tab.addEventListener("click", () => {
+  for (const [t, v] of Object.entries(TABS)) {
+    $(t).setAttribute("aria-selected", String(t === tab.id));
+    $(v).hidden = t !== tab.id;
+  }
+  if (tab.id === "tab-matches" && !matchesLoaded) loadMatches();
+}));
+
+$("refresh").addEventListener("click", load);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") tick(); });
+setInterval(() => { tick(); if (data) renderStatus(); }, 1000);
+load();
+</script>
+</body>
+</html>

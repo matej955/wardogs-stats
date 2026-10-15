@@ -1,0 +1,58 @@
+name: Update WARDOGS stats
+
+on:
+  schedule:
+    # Every 20 minutes (minutes 7, 27, 47 of each hour, UTC).
+    # GitHub often starts scheduled runs a few minutes late; that is normal.
+    - cron: "7,27,47 * * * *"
+  workflow_dispatch:        # adds a "Run workflow" button in the Actions tab
+    inputs:
+      finalize:
+        description: "Count the current match now (instead of reading the server)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write           # needed to commit the updated stats files
+
+concurrency:
+  group: wardogs-stats      # never run two updates at the same time
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Read the server and update stats
+        env:
+          WARDOGS_PASSWORD: ${{ secrets.WARDOGS_PASSWORD }}
+          WARDOGS_HOST: ${{ vars.WARDOGS_HOST }}
+          WARDOGS_PORT: ${{ vars.WARDOGS_PORT }}
+          WARDOGS_TITLE: ${{ vars.WARDOGS_TITLE }}
+        run: |
+          if [ "${{ inputs.finalize }}" = "true" ]; then
+            node scripts/update.mjs --finalize
+          else
+            node scripts/update.mjs
+          fi
+
+      - name: Save the stats to the repository
+        if: always()
+        run: |
+          git config user.name "wardogs-stats-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/data
+          if git diff --cached --quiet; then
+            echo "nothing changed"
+            exit 0
+          fi
+          git commit -m "Update stats $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git pull --rebase --quiet
+          git push
